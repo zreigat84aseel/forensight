@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environment
+venv/
+.venv/
+
+# Secrets (API keys)
+.env
+
+# Editor
+.vscode/
+.idea/
+
+# Forensight: never commit samples or outputs
+samples/
+output/
+*.eml
+*.msg
