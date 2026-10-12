@@ -1,6 +1,7 @@
 dkimpy==1.1.8
 dnspython==2.9.0
 numpy==2.5.4
+oletools==0.60.2
 opencv-python-headless==5.0.0.93
 pyspf==2.0.14
 pytest==9.1.1
