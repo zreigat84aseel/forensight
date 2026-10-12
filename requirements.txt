@@ -5,6 +5,8 @@ maxminddb==3.2.0
 numpy==2.5.4
 oletools==0.60.2
 opencv-python-headless==5.0.0.93
+pandas==3.0.6
 pyspf==2.0.14
 pytest==9.1.1
+streamlit==1.65.0
 tldextract==5.4.0
