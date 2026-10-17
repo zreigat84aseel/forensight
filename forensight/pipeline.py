@@ -87,16 +87,21 @@ def run_analyzer(func, evidence, **options):
         return func(message, **kwargs)
 
 
-def analyze_email(path, live=False, evidence=None):
+def analyze_email(path, live=False, evidence=None, ai=False):
     """Run every module on one email.
 
+    With ai=True the social-engineering module (local language model) is also run.
     Returns a dict with the evidence object, the plain results of each module,
     the list of findings (sorted by severity) and any module errors.
     """
     if evidence is None:
         evidence = ingest.load_email(path)
+    analyzers = list(ANALYZERS)
+    if ai:
+        from forensight import social
+        analyzers.append(("AI analysis", social.analyze_social))
     results, errors = {}, {}
-    for section, func in ANALYZERS:
+    for section, func in analyzers:
         try:
             results[section] = to_plain(run_analyzer(func, evidence, live=live))
         except Exception:

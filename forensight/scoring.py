@@ -44,6 +44,8 @@ TECHNIQUES = {
     "T1585.002": "Establish Accounts: Email Accounts",
     "T1656": "Impersonation",
     "T1672": "Email Spoofing",
+    "T1566": "Phishing",
+    "T1027": "Obfuscated Files or Information",
 }
 
 # Keyword rules: a regular expression searched in the finding title (case-insensitive)
@@ -63,6 +65,9 @@ RULES = [
     (r"free-mail|free mail|free provider|display name|organization-style", ["T1585.002", "T1656"]),
     (r"reply-to|return-path|spoof", ["T1656"]),
     (r"\bspf\b|\bdkim\b|\bdmarc\b|alignment", ["T1672"]),
+    (r"social engineering", ["T1566"]),
+    (r"impersonat", ["T1656"]),
+    (r"hidden text|prompt injection", ["T1027"]),
 ]
 
 # Every finding in these modules is at least evidence of the delivery technique.
@@ -141,8 +146,8 @@ def score_findings(findings, path=""):
                        contributions=contributions, bonus=bonus, techniques=techniques)
 
 
-def score_email(path, live=False):
-    analysis = analyze_email(path, live=live)
+def score_email(path, live=False, ai=False):
+    analysis = analyze_email(path, live=live, ai=ai)
     report = score_findings(analysis["findings"], path)
     report.errors = sorted(analysis["errors"])
     return report
@@ -215,6 +220,8 @@ if __name__ == "__main__":
         dataset_stats(sys.argv[2])
     elif len(sys.argv) == 2:
         print(format_report(score_email(sys.argv[1])))
+    elif len(sys.argv) == 3 and sys.argv[2] == "--ai":
+        print(format_report(score_email(sys.argv[1], ai=True)))
     else:
-        print("Usage: python -m forensight.scoring <email.eml> | --stats <folder>")
+        print("Usage: python -m forensight.scoring <email.eml> [--ai] | --stats <folder>")
         sys.exit(1)
