@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Unit tests (Python 3.14)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: System packages (YARA, OpenCV and libmagic libraries)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends yara libgl1 libmagic1 libzbar0
+
+      - name: Offline GeoIP databases (DB-IP Lite, CC BY 4.0)
+        run: |
+          mkdir -p ~/geoip
+          for db in city asn; do
+            for month in $(date +%Y-%m) $(date -d "-1 month" +%Y-%m); do
+              curl -sSfL "https://download.db-ip.com/free/dbip-$db-lite-$month.mmdb.gz" | gunzip > ~/geoip/dbip-$db-lite.mmdb && break
+            done
+          done
+          ls -la ~/geoip
+
+      - name: Python packages
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest -q -rs
+
+  docker:
+    name: Docker image
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build --build-arg PYTHON_VERSION=3.14 -t forensight:ci .
+
+      - name: Smoke test
+        run: docker run --rm -e USER=ci forensight:ci python -c "import forensight.api, forensight.report, forensight.rules; print('image OK')"
