@@ -24,6 +24,7 @@ import pandas as pd
 import streamlit as st
 
 from forensight import clustering, ingest, matching, pipeline, rules, scoring, social
+from forensight import report as forensic_report
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = PROJECT_ROOT / "output"
@@ -456,4 +457,13 @@ with TAB["Export"]:
     export_json = json.dumps(export, indent=2, ensure_ascii=False, default=str)
     st.download_button("Download JSON report", export_json,
                        file_name=f"forensight_{Path(email_path).stem}.json", mime="application/json")
+    report_data = {
+        "evidence": evidence_plain,
+        "headers": {name: forensic_report.header_value(evidence.message, name)
+                    for name in forensic_report.SUMMARY_HEADERS},
+        "findings": findings, "score": report, "matches": matches, "errors": export["errors"],
+        "social": st.session_state.get("ai") or analysis["injection"],
+    }
+    st.download_button("Download HTML forensic report", forensic_report.render_html(report_data),
+                       file_name=f"forensight_{Path(email_path).stem}_report.html", mime="text/html")
     st.json(export, expanded=False)
