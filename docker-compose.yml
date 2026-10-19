@@ -1,0 +1,34 @@
+# Run:  export HOST_UID=$(id -u) HOST_GID=$(id -g) PYTHON_VERSION=3.14
+#       docker-compose up -d
+# API:        http://127.0.0.1:8000/docs
+# Dashboard:  http://127.0.0.1:8501
+
+x-forensight: &forensight
+  image: forensight:latest
+  network_mode: host                 # sees Ollama on 127.0.0.1:11434; services stay on 127.0.0.1
+  user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+  environment:
+    HOME: /tmp
+    USER: ${USER:-forensight}        # analyst name for the chain-of-custody log
+    FORENSIGHT_API_KEY: ${FORENSIGHT_API_KEY:-}
+  volumes:
+    - ./output:/app/output           # campaigns.json, reports, uploads
+    - ${HOME}/samples:/samples:ro    # evidence is mounted read-only
+    - ${HOME}/geoip:/tmp/geoip:ro    # offline GeoIP databases (DB-IP Lite), read-only
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+
+services:
+  api:
+    <<: *forensight
+    build:
+      context: .
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.14}
+    command: uvicorn forensight.api:app --host 127.0.0.1 --port 8000
+
+  dashboard:
+    <<: *forensight
+    depends_on: [api]
+    command: streamlit run dashboard.py --server.address 127.0.0.1 --server.port 8501 --server.headless true
