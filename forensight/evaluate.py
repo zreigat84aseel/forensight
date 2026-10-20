@@ -27,6 +27,7 @@ from forensight import pipeline, scoring, social
 OUTPUT_DIR = Path("output") / "evaluation"
 THRESHOLDS = (10, 30, 60)            # Low risk, Suspicious, Malicious
 AI_SECTION = "AI analysis"
+IGNORE = []                          # ablation: findings whose module or title contains these words
 
 
 # ---------------------------------------------------------------------------
@@ -48,6 +49,9 @@ def score_file(path):
     analysis = pipeline.analyze_email(path)
     checks = pipeline.to_plain(social.analyze_social(analysis["evidence"], use_ai=False))
     findings = analysis["findings"] + pipeline.collect_findings(checks, AI_SECTION)
+    if IGNORE:
+        findings = [f for f in findings
+                    if not any(word.lower() in f"{f['section']} {f['title']}".lower() for word in IGNORE)]
     report = scoring.score_findings(findings, path)
     return report, time.perf_counter() - start
 
@@ -226,5 +230,11 @@ if __name__ == "__main__":
     parser.add_argument("--phish", required=True, help="folder with phishing emails")
     parser.add_argument("--ham", required=True, action="append", help="folder with legitimate emails")
     parser.add_argument("--limit", type=int, help="maximum number of emails per folder (random sample)")
+    parser.add_argument("--ignore", action="append", default=[],
+                        help="ablation: ignore findings whose module or title contains this text")
     args = parser.parse_args()
+    if args.ignore:
+        IGNORE.extend(args.ignore)
+        OUTPUT_DIR = OUTPUT_DIR / "ablation"
+        print("Ablation, ignored findings:", ", ".join(args.ignore))
     print(format_result(evaluate(args.phish, args.ham, args.limit)))
